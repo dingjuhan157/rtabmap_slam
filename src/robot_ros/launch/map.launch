@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Start RealSense camera -->
+  <include file="$(find robot_ros)/launch/rs.launch" />
+
+  <!-- Start robot_description -->
+  <include file="$(find robot_ros)/launch/robot_description.launch" />
+
+  <!-- Start RTABMAP and custom mapping node -->
+  <include file="$(find robot_ros)/launch/mapping.launch" />
+  
+  <!-- Start save_map node -->
+  <include file="$(find robot_ros)/launch/map_saver.launch" />  
+  
+</launch>

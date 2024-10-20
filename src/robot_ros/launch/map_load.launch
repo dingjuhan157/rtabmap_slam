@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="map_server" type="map_server" name="map_server" args="$(find robot_ros)/maps/nav.yaml" output="screen"/>
+</launch>

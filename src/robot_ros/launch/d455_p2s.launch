@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- 自定义scan数据tf位置 -->
+    <node pkg="tf" type="static_transform_publisher" name="base_to_depth2laser1" args="0.34 0.00 0.5 0 0 0  base_footprint laser1 100" />
+    <!-- 摄像头点云数据转换laserScan -->
+    <node name="depth2laser1" pkg="depthimage_to_laserscan" type="depthimage_to_laserscan"  args= "standalone depthimage_to_lasersacn/DepthImageToLaserScanNodelet">
+      <remap from="image" to="/camera/depth/image_rect_raw"/>
+      <remap from="camera_info" to="/camera/depth/camera_info"/>
+      <!-- 距离小于该值的点不识别 -->
+      <param name="range_min" type="double" value="0.45"/>
+      <!-- 距离大于该值的点不识别 -->
+      <param name="range_max" type="double" value="4"/>
+      <!-- 截取的第几行的点云，取值范围0-475，初步测试输出scan数据为scan_height附近点云的集合，0为最高高度 -->
+      <param name="scan_height" type="int" value="10"/>
+      <!-- scan数据tf名称 -->
+      <param name="output_frame_id" type="str" value="laser1"/>
+      <!-- 输出scan数据的话题名 -->
+      <remap from="scan" to="/scan"/>
+    </node>
+</launch>

@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Start RealSense camera -->
+  <include file="$(find robot_ros)/launch/rs.launch" />
+
+  <!-- Start robot_description -->
+  <include file="$(find robot_ros)/launch/robot_description.launch" />
+  
+  <!-- Start save_map node -->
+  <include file="$(find robot_ros)/launch/map_load.launch" />  
+
+  <!-- Run the depthimage_to_laserscan node -->
+  <include file="$(find robot_ros)/launch/d455_p2s.launch" />
+
+  <!-- Start navigation -->
+  <include file="$(find robot_ros)/launch/navigation.launch" />
+  
+  <!-- rviz -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find robot_ros)/rviz/d455.rviz"/>
+  <!-- rtabmap -->
+  <include file="$(find robot_ros)/launch/mapping.launch">
+	<arg name="localization"  value="true"/>
+  </include>
+  
+</launch>

@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- 建立基本的tf树 -->
+  <!-- map -> odom 变换将由 AMCL 动态更新，这里提供一个初始静态变换 -->
+  <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 0 0 map odom 100" />
+  
+  <!-- base_footprint 相关的静态变换 -->
+  <node pkg="tf" type="static_transform_publisher" name="base_to_link" args="0 0 0.05 0 0 0 base_footprint base_link 100" />
+  <node pkg="tf" type="static_transform_publisher" name="base_to_imu" args="0 0 0.05 0 0 0 base_footprint camera_imu_optical_frame 100" />
+  <node pkg="tf" type="static_transform_publisher" name="base_to_laser" args="0.125 0.00 0.1608 3.14 0 0 base_footprint laser 100" />
+  <node pkg="tf" type="static_transform_publisher" name="base_to_camera" args="0.195 0.00 0.25 0 0 0 base_footprint camera_link 100" />
+  <node pkg="tf" type="static_transform_publisher" name="base_to_gyro" args="0 0 0 0 0 0 base_footprint gyro_link 100" />
+  
+  <node pkg="tf" type="static_transform_publisher" name="odom_to_base" args="0 0 0 0 0 0 odom base_link 100" />
+  <node pkg="tf" type="static_transform_publisher" name="odom_to_foot" args="0 0 0 0 0 0 odom base_footprint 100" />
+  <!-- 添加一个静态变换，连接相机坐标系和基座坐标系 -->
+  <node pkg="tf" type="static_transform_publisher" name="camera_imu_optical_to_base_link" args="0 0 0.1 0 0 0 camera_imu_optical_frame camera_link 100" />
+  
+  <!-- 固定odom_combined于map，连接tf树 -->
+   <!-- <node pkg="tf" type="static_transform_publisher" name="odom_to_map" args="0 0 0 0 0 0  map odom_combined 100" />  -->
+  
+  <!-- 加载机器人描述参数 -->
+  <param name="robot_description" command="$(find xacro)/xacro $(find robot_ros)/urdf/car.urdf.xacro" />
+  
+  <!-- 启动 joint_state_publisher -->
+  <node pkg="joint_state_publisher" name="joint_state_publisher" type="joint_state_publisher" />
+  
+  <!-- 启动 robot_state_publisher -->
+  <node pkg="robot_state_publisher" name="robot_state_publisher" type="robot_state_publisher" />
+	
+
+  <!-- 启动 robot_localization EKF 节点用于里程计 -->
+   <!-- <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odom" clear_params="true">
+    <rosparam command="load" file="$(find robot_ros)/config/ekf_params.yaml" />
+    
+    <remap from="odometry/filtered" to="odom" />
+    <remap from="imu/data" to="/camera/imu" />
+    
+    <param name="odom_frame" value="odom" />
+    <param name="base_link_frame" value="base_footprint" />
+    <param name="world_frame" value="odom" />
+  </node>  -->
+</launch>

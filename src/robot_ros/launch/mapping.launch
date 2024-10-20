@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- 定义launch文件的参数 -->
+  <arg name="database_path"     default="rtabmap.db"/>   <!-- RTAB-Map数据库路径 -->
+  <arg name="rgbd_odometry"     default="false"/>        <!-- 是否使用RGB-D相机进行里程计 -->
+  <arg name="rtabmapviz"        default="false"/>        <!-- 是否启动RTAB-Map可视化工具 -->
+  <arg name="localization"      default="false"/>        <!-- 是否使用定位模式 -->
+  <arg name="simulation"        default="false"/>        <!-- 是否在仿真环境中运行 -->
+  <arg name="sw_registered"     default="false"/>        <!-- 是否使用软件配准的深度图像 -->
+  <arg     if="$(arg localization)" name="args"  default=""/>  <!-- 定位模式下的额外参数 -->
+  <arg unless="$(arg localization)" name="args"  default="--delete_db_on_start"/>  <!-- 非定位模式下,启动时删除已有数据库 -->
+
+  <!-- 定义相机话题名称 -->
+  <arg name="rgb_topic"   default="/camera/color/image_raw"/>         <!-- RGB图像话题 -->
+  <arg name="depth_topic" default="/camera/aligned_depth_to_color/image_raw"/>  <!-- 深度图像话题 -->
+  <arg name="camera_info_topic" default="/camera/color/camera_info"/>  <!-- 相机信息话题 -->
+
+  <arg name="wait_for_transform"  default="0.2"/>  <!-- 等待坐标变换的最大时间(秒) -->
+
+  <!-- RTAB-Map主要节点配置 -->
+  <group ns="rtabmap">
+ 
+    <node name="rtabmap" pkg="rtabmap_slam" type="rtabmap" output="screen" args="$(arg args)">
+      <!-- RTAB-Map节点的参数配置 -->
+      <param name="database_path"       type="string" value="$(arg database_path)"/>  <!-- 数据库路径 -->
+      <param name="frame_id"            type="string" value="base_footprint"/>        <!-- 基准坐标系 -->
+      <param name="wait_for_transform_duration"  type="double"   value="$(arg wait_for_transform)"/>  <!-- 等待坐标变换的时间 -->
+      <param name="subscribe_depth"     type="bool"   value="true"/>   <!-- 订阅深度图像 -->
+      <param name="map_negative_poses_ignored" type="bool" value="true"/>  <!-- 忽略负面姿态 -->
+
+      <!-- 输入话题重映射 -->
+      <remap from="rgb/image"       to="$(arg rgb_topic)"/>
+      <remap from="depth/image"     to="$(arg depth_topic)"/>
+      <remap from="rgb/camera_info" to="$(arg camera_info_topic)"/>
+
+      <!-- 修正里程计协方差 -->
+      <param unless="$(arg rgbd_odometry)" name="odom_frame_id" value="odom"/>
+      <param unless="$(arg rgbd_odometry)" name="odom_tf_linear_variance" value="0.001"/>
+      <param unless="$(arg rgbd_odometry)" name="odom_tf_angular_variance" value="0.001"/>
+  	  
+      <!-- 输出话题重映射 -->
+      <remap from="grid_map" to="/map"/>
+	
+      <!-- RTAB-Map的详细参数配置 -->
+      <param name="RGBD/ProximityBySpace"        type="string" value="true"/>   <!-- 使用空间接近度进行局部回环检测 -->
+      <param name="RGBD/OptimizeFromGraphEnd"    type="string" value="false"/>  <!-- 不从图的末端开始优化,用于生成/map和/odom之间的校正 -->
+      <param name="Kp/MaxDepth"                  type="string" value="4.0"/>    <!-- 特征点最大深度 -->
+      <param name="Reg/Strategy"                 type="string" value="0"/>      <!-- 回环检测策略: 0=视觉 -->
+      <param name="Vis/MinInliers"               type="string" value="20"/>     <!-- 视觉回环检测时的最小内点数 -->
+      <param name="Vis/InlierDistance"           type="string" value="0.05"/>    <!-- 视觉特征匹配的最大距离 -->
+      <param name="RGBD/AngularUpdate"           type="string" value="0.5"/>    <!-- 角度变化阈值,超过此值才更新地图 -->
+      <param name="RGBD/LinearUpdate"            type="string" value="0.5"/>    <!-- 线性移动阈值,超过此值才更新地图 -->
+      <param name="RGBD/ProximityPathMaxNeighbors" type="string" value="0"/>    <!-- 邻近路径的最大邻居数 -->
+      <param name="Rtabmap/TimeThr"              type="string" value="0"/>      <!-- 两次更新之间的最小时间间隔 -->
+      <param name="Mem/RehearsalSimilarity"      type="string" value="0.30"/>   <!-- 记忆排练的相似度阈值 -->
+      <param name="Reg/Force3DoF"                type="string" value="false"/>   <!-- 强制3自由度运动(平面运动) -->
+      <param name="GridGlobal/MinSize"           type="string" value="20"/>     <!-- 全局栅格地图的最小尺寸 -->
+      
+      <param name="Vis/FeatureType" 	            type="string" value="0"/>
+      <param name="Vis/EstimationType" 	     type="string" value="1"/>
+      <param name="Vis/MaxFeatures" 	            type="string" value="1000"/>   
+
+      <!-- 定位模式相关参数 -->
+      <param     if="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="false"/>  <!-- 定位模式下关闭增量内存 -->
+      <param unless="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="true"/>   <!-- 非定位模式下开启增量内存 -->
+      <param name="Mem/InitWMWithAllNodes" type="string" value="$(arg localization)"/>  <!-- 是否使用所有节点初始化工作记忆 -->
+    </node>
+   
+    <!-- RGB-D相机里程计节点 : 仅用于测试,实际机器人不应使用 -->
+    <node if="$(arg rgbd_odometry)" pkg="rtabmap_ros" type="rgbd_odometry" name="rgbd_odometry" output="screen">
+      <param name="frame_id"                    type="string" value="base_footprint"/>  <!-- 基准坐标系 -->
+      <param name="wait_for_transform_duration" type="double" value="$(arg wait_for_transform)"/>  <!-- 等待坐标变换的时间 -->
+      <param name="Reg/Force3DoF"               type="string" value="true"/>   <!-- 强制3自由度运动 -->
+      <param name="Vis/InlierDistance"          type="string" value="0.05"/>   <!-- 视觉特征匹配的最大距离 -->
+      
+      <!-- 输入话题重映射 -->
+      <remap from="rgb/image"       to="$(arg rgb_topic)"/>
+      <remap from="depth/image"     to="$(arg depth_topic)"/>
+      <remap from="rgb/camera_info" to="$(arg camera_info_topic)"/>
+    </node>
+    
+    <!-- RTAB-Map可视化节点配置 -->
+    <node if="$(arg rtabmapviz)" pkg="rtabmap_viz" type="rtabmap_viz" name="rtabmap_viz" args="-d $(find rtabmap_ros)/launch/config/rgbd_gui.ini" output="screen">
+      <param name="subscribe_depth"             type="bool" value="true"/>   <!-- 订阅深度图像 -->
+      <param name="frame_id"                    type="string" value="base_footprint"/>  <!-- 基准坐标系 -->
+      <param name="wait_for_transform_duration" type="double" value="$(arg wait_for_transform)"/>  <!-- 等待坐标变换的时间 -->
+    
+      <!-- 输入话题重映射 -->
+      <remap from="rgb/image"       to="$(arg rgb_topic)"/>
+      <remap from="depth/image"     to="$(arg depth_topic)"/>
+      <remap from="rgb/camera_info" to="$(arg camera_info_topic)"/>
+    </node>
+    
+  </group>
+  
+  <!-- rviz -->
+  <!--  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find robot_ros)/rviz/d455.rviz"/>  -->
+  
+</launch>

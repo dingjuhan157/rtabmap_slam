@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+  <node name="stm32_controller" pkg="robot_ros" type="stm32_controller.py" output="screen">
+    <param name="port" value="/dev/ttyUSB0" />
+    <param name="baud" value="115200" />
+  </node>
+</launch>

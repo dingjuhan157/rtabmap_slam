@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node name="move" pkg="robot_ros" type="move.py" output="screen">
+        <param name="port" value="/dev/ttyUSB0" />
+        <param name="baud" value="115200" />
+    </node> 
+    
+    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen" clear_params="true">
+        <rosparam file="$(find robot_ros)/config/costmap_common_params.yaml" command="load" ns="global_costmap" />
+        <rosparam file="$(find robot_ros)/config/costmap_common_params.yaml" command="load" ns="local_costmap" />
+        <rosparam file="$(find robot_ros)/config/local_costmap_params.yaml" command="load" />
+        <rosparam file="$(find robot_ros)/config/global_costmap_params.yaml" command="load" />
+        <rosparam file="$(find robot_ros)/config/base_local_planner_params.yaml" command="load" />
+    </node>
+
+
+</launch>
